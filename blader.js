@@ -1,6 +1,18 @@
 (function() {
 	'use strict';
 
+	/* utility function for Gecko which does not support 
+	   event.offsetX / event.offsetY */
+	function getMousePos(e) {
+		if (e.offsetX) {
+			return { x: e.offsetX, y: e.offsetY };
+		} else if (e.layerX) {
+			return { x: e.layerX, y: e.layerY };
+		} else {
+			throw 'Cannot get mouse coordinates';
+		}
+	}
+
 	var ToggleButton = function(id, title) {
 		var self = this;
 
@@ -222,13 +234,15 @@
 
 			pageElement.addEventListener('mousedown', function(e) {
 				if (self.insertMode) {
+					var mousePos = getMousePos(e);
 					self.beginInsertDrag(
-						pageElement, e.offsetX, e.offsetY);
+						pageElement, mousePos.x, mousePos.y);
 				}
 			}, false);
 
 			pageElement.addEventListener('mousemove', function(e) {
-				self.trackInsertDrag(e.offsetX, e.offsetY);
+				var mousePos = getMousePos(e);
+				self.trackInsertDrag(mousePos.x, mousePos.y);
 			}, false);
 
 			pageElement.addEventListener('mouseup', function(e) {
