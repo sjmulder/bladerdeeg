@@ -1,0 +1,6 @@
+[submodule "pdf.js"]
+	path = pdf.js
+	url = https://github.com/mozilla/pdf.js.git
+[submodule "event-registrar"]
+	path = event-registrar
+	url = https://github.com/sjmulder/event-registrar.git
