@@ -69,15 +69,20 @@
 		}
 	};
 
-	var Block = function(element, type) {
+	var Block = function(blockElement, type) {
+		var self = this;
+
 		if (type !== 'link' && type !== 'video') {
 			throw 'Unknown block type: ' + type;
 		}
 
+		registerEvent(this, 'click');
+		registerEvent(this, 'save');
+
 		var formElement = document.createElement('form');
 		formElement.className = 'toolbarForm';
 		var urlLabel = document.createElement('label');
-		urlLabel.textContent = type == 'video' ? 'MP4 URL' : 'URL';
+		urlLabel.textContent = type == 'video' ? 'MP4 file URL:' : 'Link URL:';
 		var urlInput = document.createElement('input');	
 		urlInput.type = 'url';
 		urlInput.name = 'url';
@@ -99,20 +104,34 @@
 			formElement.appendChild(autoplayLabel);
 		}
 		
-		this.element = formElement;
+		formElement.addEventListener('submit', function(e) {
+			e.preventDefault();
+			self.saveSettings();
+		}, false);
+
+		blockElement.addEventListener('click', function() {
+			self.emit('click');
+		}, false);
+
+		this.blockElement = blockElement;
+		this.formElement = formElement;
 		this.urlInput = urlInput;
 		this.blockType = type;
-		this.settings = { url: '' };
+		this.data = { url: '' };
 	};
 
 	Block.prototype = {
 		saveSettings: function() {
 			this.data.url = this.urlInput.value;
+			this.emit('save');
 		}
 	};
 
 	var BladerView = function() {
 		var self = this;
+
+		registerEvent(this, 'blockSelected');
+		registerEvent(this, 'blockDeselected');
 
 		PDFJS.disableWorker = true;
 
@@ -155,6 +174,9 @@
 		this.videoButton = videoButton;
 		this.previewButton = previewButton;
 		this._insertMode = false;
+		this._selectedBlock = null;
+
+		this.blocks = [];
 
 		dropZone.addEventListener('dragenter', function(e) {
 			e.preventDefault();
@@ -201,6 +223,20 @@
 			self.videoButton.deselect();
 			self.linkButton.element.hidden = selected;
 			self.videoButton.element.hidden = selected;
+		});
+
+		this.on('blockSelected', function(block) {
+			toolDeselect();
+			buttonContainer.hidden = true;
+			toolbar.appendChild(block.formElement);
+			block.blockElement.className += ' selected';
+		});
+
+		this.on('blockDeselected', function(block) {
+			buttonContainer.hidden = false;
+			toolbar.removeChild(block.formElement);
+			block.blockElement.className = 
+				block.blockElement.className.replace(/selected/g);
 		});
 	};
 
@@ -294,6 +330,20 @@
 			}
 		},
 
+		get selectedBlock() {
+			return this._selectedBlock;
+		},
+
+		set selectedBlock(value) {
+			if (this.selectedBlock) {
+				this.emit('blockDeselected', this.selectedBlock);
+			}
+			this._selectedBlock = value;
+			if (this._selectedBlock) {
+				this.emit('blockSelected', value);
+			}
+		},
+
 		beginInsertDrag: function(pageCanvas, x, y) {
 			this.cancelInsertDrag();
 			
@@ -330,22 +380,38 @@
 		},
 
 		endInsertDrag: function() {
+			var self = this;
+
 			if (!this.insertingBlock) {
 				return;
 			}
 
-			var block = this.insertingBlock;
-			var canvas = block.parentNode;
+			var blockElem = this.insertingBlock;
+			var canvas = blockElem.parentNode;
 			var xf = 100 / canvas.clientWidth;
 			var yf = 100 / canvas.clientHeight;
 
-			block.className = block.className.replace(/ inserting/g, '');
-			block.style.left   = (block.offsetLeft   * xf) + '%';
-			block.style.width  = (block.offsetWidth  * xf) + '%';
-			block.style.top    = (block.offsetTop    * yf) + '%';
-			block.style.height = (block.offsetHeight * yf) + '%';
+			blockElem.className = blockElem.className.replace(/ inserting/g, '');
+			blockElem.style.left   = (blockElem.offsetLeft   * xf) + '%';
+			blockElem.style.width  = (blockElem.offsetWidth  * xf) + '%';
+			blockElem.style.top    = (blockElem.offsetTop    * yf) + '%';
+			blockElem.style.height = (blockElem.offsetHeight * yf) + '%';
 
 			this.insertingBlock = null;
+
+			var block = new Block(blockElem, 
+				this.linkButton.selected ? 'link' : 'video');
+
+			block.on('click', function() {
+				self.selectedBlock = block;
+			});
+
+			block.on('save', function() {
+				self.selectedBlock = null;
+			});
+
+			this.blocks.push(block);
+
 			this.linkButton.deselect();
 			this.videoButton.deselect();
 		}
