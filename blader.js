@@ -82,7 +82,8 @@
 		var formElement = document.createElement('form');
 		formElement.className = 'toolbarForm';
 		var urlLabel = document.createElement('label');
-		urlLabel.textContent = type == 'video' ? 'MP4 file URL:' : 'Link URL:';
+		urlLabel.textContent = 
+			type == 'video' ? 'MP4 file URL:' : 'Link URL:';
 		var urlInput = document.createElement('input');	
 		urlInput.type = 'url';
 		urlInput.name = 'url';
@@ -109,7 +110,8 @@
 			self.saveSettings();
 		}, false);
 
-		blockElement.addEventListener('click', function() {
+		blockElement.addEventListener('click', function(e) {
+			e.stopPropagation();
 			self.emit('click');
 		}, false);
 
@@ -200,6 +202,13 @@
 			self.loadFile(file);
 		}, false);
 
+		pageContainer.addEventListener('click', function(e) {
+			if (self.selectedBlock) {
+				self.selectedBlock = null;
+				e.stopPropagation();
+			}
+		}, false);
+
 		linkButton.on('select', function() {
 			self.videoButton.deselect();
 			self.insertMode = true;
@@ -282,7 +291,25 @@
 			}, false);
 
 			pageElement.addEventListener('mouseup', function(e) {
-				self.endInsertDrag();
+				if (self.insertMode) {
+					self.endInsertDrag();
+
+					/* prevent click event */
+					var clickListener = function(e2) {
+						e2.preventDefault();
+						e2.stopPropagation();
+						pageElement.removeEventListener(
+							'click', clickListener, false);
+					};
+					pageElement.addEventListener(
+						'click', clickListener, false);
+				}
+			}, false);
+
+			pageElement.addEventListener('click', function(e) {
+				if (self.insertMode) {
+					e.stopPropagation();
+				}
 			}, false);
 
 			var context = canvas.getContext('2d');
@@ -391,7 +418,8 @@
 			var xf = 100 / canvas.clientWidth;
 			var yf = 100 / canvas.clientHeight;
 
-			blockElem.className = blockElem.className.replace(/ inserting/g, '');
+			blockElem.className =
+				blockElem.className.replace(/ inserting/g, '');
 			blockElem.style.left   = (blockElem.offsetLeft   * xf) + '%';
 			blockElem.style.width  = (blockElem.offsetWidth  * xf) + '%';
 			blockElem.style.top    = (blockElem.offsetTop    * yf) + '%';
