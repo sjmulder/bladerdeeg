@@ -1,6 +1,12 @@
 (function() {
 	'use strict';
 
+	function alertUnsupported(feature) {
+		alert(
+			'Your browser does not support ' + feature + '. ' +
+			'Try using the latest version of Google Chrome or Firefox.');
+	}
+
 	/* utility function for Gecko which does not support 
 	   event.offsetX / event.offsetY */
 	function getMousePos(e) {
@@ -9,6 +15,7 @@
 		} else if (e.layerX) {
 			return { x: e.layerX, y: e.layerY };
 		} else {
+			alertUnsupported('local mouse coordinates');
 			throw 'Cannot get mouse coordinates';
 		}
 	}
