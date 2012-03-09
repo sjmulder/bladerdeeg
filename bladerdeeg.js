@@ -206,6 +206,7 @@
 				alert('Please drop a PDF file.');
 				return;	
 			}
+			e.preventDefault();
 			self.loadFile(file);
 		}, false);
 
