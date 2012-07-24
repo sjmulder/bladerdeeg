@@ -7,6 +7,11 @@
 	</head>
 	<body>
 		<script src="pdf.js/build/pdf.js"></script>
+		<script>
+			if (typeof window.PDFJS === 'undefined') {
+				document.write('<scri' + 'pt src="lib/pdf.js"></scri' + 'pt>');
+			}
+		</script>
 		<script src="event-registrar/event-registrar.js"></script>
 		<script src="bladerdeeg.js"></script>
 		<script>
